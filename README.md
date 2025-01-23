@@ -1,5 +1,5 @@
 Gameplay Video : https://youtu.be/a4X6b6PTX3k?feature=shared
-
+C# Scripting in Scripts Folder
 
 AmbiScious is a fast pace 2.5D (3D environment but player's POV in Horizontal and Vertical Axis) platformer game that implements some core mechanics of a platformer game.
 It's still in very early development phase with only the core movement, control and animations of the main character beeing implemented.
