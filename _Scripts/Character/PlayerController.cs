@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using Utility;
+using UnityEngine.VFX;
 
 public class PlayerController : MonoBehaviour
 {
@@ -15,6 +16,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private ParticleSystem muzzleFlash;
     [SerializeField] private TrailRenderer tracerEffect;
     [SerializeField] private ParticleSystem dashEffect;
+    [SerializeField] private VisualEffect jumpEffect;
 
     private Camera mainCamera;
     public LayerMask planeLayer;
@@ -62,9 +64,11 @@ public class PlayerController : MonoBehaviour
         dashCoolDownTimer = new CooldownTimer (data.dashCooldown);
 
         // actions to performed when timers start and stop
-        jumpTimer.OnTimerStop += () => { jumpCoolDownTimer.Start(); isShooting = false; };
+        jumpTimer.OnTimerStop += () => { jumpCoolDownTimer.Start(); isShooting = false; jumpEffect.Stop(); };
         dashTimer.OnTimerStop += () => { dashCoolDownTimer.Start(); isShooting = false; };
+        jumpTimer.OnTimerStart += () => jumpEffect.Play();
         dashTimer.OnTimerStart += () =>  dashEffect.Play();
+
 
         timers = new List<Timer> { jumpTimer, dashTimer, jumpCoolDownTimer, dashCoolDownTimer };
 
