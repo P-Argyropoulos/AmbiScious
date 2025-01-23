@@ -35,10 +35,11 @@ public class PlayerController : MonoBehaviour
     private CooldownTimer jumpCoolDownTimer, dashCoolDownTimer;
     private float lastTimeWasOnGround;
     private Vector3 shootDirection;
-    private float maxProjectileDistance = 20f;
+    private readonly float maxProjectileDistance = 20f;
 
     public int FacingSide
     {
+        // returning the facing direction  of the player in world space
         get 
         {
             Vector3 perpendicularPosition = Vector3.Cross(transform.forward, Vector3.forward);
@@ -54,12 +55,13 @@ public class PlayerController : MonoBehaviour
         mainCamera = Camera.main;
         stateMachine = new StateMachine();
 
+        //Timers set up based on the MovementData scriptable object values 
         jumpTimer = new CooldownTimer(data.jumpButtonHoldTime);
         dashTimer = new CooldownTimer(data.dashDuration);
         jumpCoolDownTimer = new CooldownTimer(data.jumpCoolDown);
         dashCoolDownTimer = new CooldownTimer (data.dashCooldown);
 
-
+        // actions to performed when timers start and stop
         jumpTimer.OnTimerStop += () => { jumpCoolDownTimer.Start(); isShooting = false; };
         dashTimer.OnTimerStop += () => { dashCoolDownTimer.Start(); isShooting = false; };
         dashTimer.OnTimerStart += () =>  dashEffect.Play();
@@ -73,6 +75,7 @@ public class PlayerController : MonoBehaviour
         var dashState = new DashState (this, animator);
         var shootState = new ShootState (this, animator);
 
+        //Declaring conditions to transfer from one animations state to another
         At(locomotionState, jumpState, new FuncPredicate(() => jumpTimer.isRunning));
         At(locomotionState, shootState, new FuncPredicate(() => isShooting));
         At(locomotionState, dashState, new FuncPredicate(() => dashTimer.isRunning));
@@ -105,6 +108,7 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        //State Machine checking state every frame for transitions
         stateMachine.Update();
         HandleAiming();
         HandleTimers(); 
@@ -113,6 +117,7 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
+        //Animation States also handles the movement(Jump, Dash, Move)
         stateMachine.FixedUpdate();
         HandleRotation();
         ApplyGravity();
@@ -137,7 +142,6 @@ public class PlayerController : MonoBehaviour
         isShooting = performed;
     }
 
-    
     private void OnJump( bool performed)
     {
         jumpTiming = Time.time;
@@ -170,13 +174,14 @@ public class PlayerController : MonoBehaviour
 
 
     private void HandleAiming()
-    {
+    {   //Raycast from camera to mousecursor and projecting the hit on  invis plane behind the player  
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray,out RaycastHit hitInfo, Mathf.Infinity, planeLayer))
         {
             target.position = hitInfo.point;
         }
 
+        //Projecting the hit to players forward Axis
         Vector3 toHit = target.position - transform.position;
         Vector3 projectedPoint = Vector3.ProjectOnPlane(toHit, transform.right) + transform.position;
         shootDirection = (projectedPoint - gunPoint.position).normalized;
@@ -190,13 +195,16 @@ public class PlayerController : MonoBehaviour
         var tracer = Instantiate(tracerEffect, gunPoint.position, Quaternion.identity);
         tracer.AddPosition (gunPoint.position);
 
+        //clamping the the mouseposition shooting point in relation with guns barrel point
         if (Vector3.Angle(gunPoint.right.normalized, shootDirection.normalized) > 1)
         {
             shootDirection =  Vector3.ProjectOnPlane(gunPoint.right, transform.right);
         }
-       
+
+       //Raycasting from gun barrel point to shootdirection we pointing with mousecursor
         if (Physics.Raycast( gunPoint.position, shootDirection, out RaycastHit hitInfo, Mathf.Infinity))
         {
+            //if the raycasthit anything else than the plane behind the player (which is for camera raycast) , show the effects(bulletholes, impact effect, projectile trails)
             if( hitInfo.collider.gameObject.layer == LayerMask.NameToLayer("TargetPlain")) return;
             
             hitEffect.transform.position = hitInfo.point;
@@ -206,6 +214,7 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
+            //still showing projectile trails even if players raycast didnt hit anything (example: sky)
             tracer.transform.position = gunPoint.position + shootDirection * maxProjectileDistance;
         }
     }
@@ -213,8 +222,8 @@ public class PlayerController : MonoBehaviour
 
     private void HandleRotation()
     {
-        // player's model smooth roration based on the crosshair position in world space
-        float targetAngle = 90* Mathf.Sign(target.position.x - transform.position.x);
+        // player's model smooth 90 degrees roration based on the crosshair position in world space
+        float targetAngle = 90 * Mathf.Sign(target.position.x - transform.position.x);
         Quaternion targetRotation = Quaternion.Euler ( new Vector3 (0, targetAngle, 0));
         Quaternion smoothRotation = Quaternion.Lerp(transform.rotation, targetRotation, rotationSpeed * Time.fixedDeltaTime);
          
@@ -225,18 +234,20 @@ public class PlayerController : MonoBehaviour
 
     public void HandleMove()
     {
+        // local values to calculate accel - decel based on player Inputs
          float accelRate;
          float targetSpeed = moveDirection.x * data.maxMovementSpeed;
          speedDiff = targetSpeed - playerRB.linearVelocity.x;
 
         if (groundChecker.isGrounded)
         {       
+            //Values when he is on the ground
             lastTimeWasOnGround = Time.time;
             accelRate = (Mathf.Abs(targetSpeed) > 0.01f)? data.groundAcceleration : data.groundDeceleration;
         }
         else
         {
-            // Less control on the air
+            // Less control on the air, values when he is in the air , even jumping or falling from platform
             accelRate = (Mathf.Abs(targetSpeed) > 0.01f)? data.airAcceleration : data.airDeceleration;
         }
 
@@ -245,6 +256,7 @@ public class PlayerController : MonoBehaviour
 
         if (dashTimer.isRunning)
         {
+            // pausing gravity momentarily when dashing
             playerRB.linearVelocity = new Vector3(dashDirection * data.dashPower, 0, 0);
         }
         
@@ -262,18 +274,20 @@ public class PlayerController : MonoBehaviour
         if (jumpTimer.isRunning)
         {
             float launchPoint = 0.9f;
-
+            // using big force on the first 10% of the jump
             if (jumpTimer.Progress > launchPoint)
             {
                 jumpVelocity = data.jumpForce; 
             }
             else 
             { 
+                // progressive lower jump force values based on wich phase of the jump player be  
                 jumpVelocity += (1 - jumpTimer.Progress) * data.gravityStrength * data.smallJumpMultiplier * Time.fixedDeltaTime;
             }
         }
         else
         {
+            // progressive more custom gravity values after the apex of the jump
             jumpVelocity += data.gravityStrength * data.fallMultiplier * Time.fixedDeltaTime;
         }
 
@@ -283,6 +297,7 @@ public class PlayerController : MonoBehaviour
 
     private void ApplyGravity()
     {   
+        // Applying custom gravity values
         if (groundChecker.isGrounded)
         {   // handles the gravity values when player is on ground
             playerRB.linearVelocity = new Vector3(playerRB.linearVelocity.x, playerRB.linearVelocity.y + data.gravityStrength * Time.fixedDeltaTime, 0);
