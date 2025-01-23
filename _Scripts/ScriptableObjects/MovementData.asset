@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 703e6c0a9af488b4e8c448e55ab6cdb5, type: 3}
+  m_Name: MovementData
+  m_EditorClassIdentifier: 
+  gravityStrength: -12.444445
+  fallMultiplier: 3.5
+  smallJumpMultiplier: 1.5
+  maxFallSpeed: 0
+  maxMovementSpeed: 7.3
+  groundAcceleration: 10.1
+  groundDeceleration: 15.3
+  airAcceleration: 8.5
+  airDeceleration: 11.4
+  jumpHeight: 3.5
+  jumpTimeToApex: 0.75
+  jumpForce: 9.333333
+  jumpCoolDown: 0
+  jumpButtonHoldTime: 0.3
+  dashPower: 15
+  dashDuration: 0.2
+  dashCooldown: 1
+  coyteTime: 0.153
+  jumpBufferTime: 0
