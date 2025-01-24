@@ -21,7 +21,7 @@ Player's inputs pass through a Scriptable object class to Player Controller clas
 
 An expandable Finite State Machine is implemented to handle character's animations and animations transitions between states. 
 
-    Future implementations: 
+    Future Implementations: 
 
 Next steps in the course of development are a gameplay story and a purpose that the level design gonna based of, enemy Ai with aggresive behaviour against the character , Boss fight, UI, Audio sound and audio effects.
 
