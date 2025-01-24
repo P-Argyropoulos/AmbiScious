@@ -23,25 +23,24 @@ public class PlayerController : MonoBehaviour
 
     StateMachine stateMachine;
 
+    private Vector3 shootDirection;
     private Vector2 moveDirection;
     
     private int dashDirection;
     private float jumpVelocity;
-    private  float jumpTiming;
     private readonly float rotationSpeed = 18f;
     public float speedDiff;
     public bool isShooting;
+    private float lastTimeWasOnGround;
+    private readonly float maxProjectileDistance = 20f;
     
     private List <Timer> timers;
     private CooldownTimer jumpTimer, dashTimer;
     private CooldownTimer jumpCoolDownTimer, dashCoolDownTimer;
-    private float lastTimeWasOnGround;
-    private Vector3 shootDirection;
-    private readonly float maxProjectileDistance = 20f;
-
+    
     public int FacingSide
     {
-        // returning the facing direction  of the player in world space
+        // Returning the facing direction  of the player in world space
         get 
         {
             Vector3 perpendicularPosition = Vector3.Cross(transform.forward, Vector3.forward);
@@ -63,11 +62,11 @@ public class PlayerController : MonoBehaviour
         jumpCoolDownTimer = new CooldownTimer(data.jumpCoolDown);
         dashCoolDownTimer = new CooldownTimer (data.dashCooldown);
 
-        // actions to performed when timers start and stop
+        // Actions to performed when timers start and stop
         jumpTimer.OnTimerStop += () => { jumpCoolDownTimer.Start(); isShooting = false; jumpEffect.Stop(); };
         dashTimer.OnTimerStop += () => { dashCoolDownTimer.Start(); isShooting = false; };
         jumpTimer.OnTimerStart += () => jumpEffect.Play();
-        dashTimer.OnTimerStart += () =>  dashEffect.Play();
+        dashTimer.OnTimerStart += () => dashEffect.Play();
 
 
         timers = new List<Timer> { jumpTimer, dashTimer, jumpCoolDownTimer, dashCoolDownTimer };
@@ -141,15 +140,17 @@ public class PlayerController : MonoBehaviour
         moveDirection = direction;
     }
 
+
     private void OnFire(bool performed)
     {
         isShooting = performed;
     }
 
+
     private void OnJump( bool performed)
     {
-        jumpTiming = Time.time;
-        //                                                                     checking if player pressed the button in  a small time window after leaving the ground
+        float jumpTiming = Time.time;
+        //                                                                     checking if player pressed the button in  a small time window after running of a platform
         if (performed && !jumpCoolDownTimer.isRunning && !jumpTimer.isRunning && (groundChecker.isGrounded || jumpTiming - lastTimeWasOnGround <= data.coyteTime ))
         { 
             jumpTimer.Start();
@@ -185,7 +186,7 @@ public class PlayerController : MonoBehaviour
             target.position = hitInfo.point;
         }
 
-        //Projecting the hit to players forward Axis
+        //Projecting the hit to players forward Axis and calculating the shootDirection based on the gun barrel edge 
         Vector3 toHit = target.position - transform.position;
         Vector3 projectedPoint = Vector3.ProjectOnPlane(toHit, transform.right) + transform.position;
         shootDirection = (projectedPoint - gunPoint.position).normalized;
@@ -199,7 +200,7 @@ public class PlayerController : MonoBehaviour
         var tracer = Instantiate(tracerEffect, gunPoint.position, Quaternion.identity);
         tracer.AddPosition (gunPoint.position);
 
-        //clamping the the mouseposition shooting point in relation with guns barrel point
+        //Clamping the the mouseposition shooting point in relation with guns barrel point
         if (Vector3.Angle(gunPoint.right.normalized, shootDirection.normalized) > 1)
         {
             shootDirection =  Vector3.ProjectOnPlane(gunPoint.right, transform.right);
@@ -208,7 +209,7 @@ public class PlayerController : MonoBehaviour
        //Raycasting from gun barrel point to shootdirection we pointing with mousecursor
         if (Physics.Raycast( gunPoint.position, shootDirection, out RaycastHit hitInfo, Mathf.Infinity))
         {
-            //if the raycasthit anything else than the plane behind the player (which is for camera raycast) , show the effects(bulletholes, impact effect, projectile trails)
+            //If the raycasthit anything else than the plane behind the player (which is for camera raycast) , show the effects(bulletholes, impact effect, projectile trails)
             if( hitInfo.collider.gameObject.layer == LayerMask.NameToLayer("TargetPlain")) return;
             
             hitEffect.transform.position = hitInfo.point;
@@ -218,7 +219,7 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            //still showing projectile trails even if players raycast didnt hit anything (example: sky)
+            //Still showing projectile trails even if players raycast didnt hit anything (example: sky)
             tracer.transform.position = gunPoint.position + shootDirection * maxProjectileDistance;
         }
     }
@@ -226,7 +227,7 @@ public class PlayerController : MonoBehaviour
 
     private void HandleRotation()
     {
-        // player's model smooth 90 degrees roration based on the crosshair position in world space
+        // Player's model smooth 90 degrees roration based on the crosshair position in world space
         float targetAngle = 90 * Mathf.Sign(target.position.x - transform.position.x);
         Quaternion targetRotation = Quaternion.Euler ( new Vector3 (0, targetAngle, 0));
         Quaternion smoothRotation = Quaternion.Lerp(transform.rotation, targetRotation, rotationSpeed * Time.fixedDeltaTime);
@@ -238,7 +239,7 @@ public class PlayerController : MonoBehaviour
 
     public void HandleMove()
     {
-        // local values to calculate accel - decel based on player Inputs
+        // Local values to calculate accel - decel based on player Inputs
          float accelRate;
          float targetSpeed = moveDirection.x * data.maxMovementSpeed;
          speedDiff = targetSpeed - playerRB.linearVelocity.x;
@@ -260,7 +261,7 @@ public class PlayerController : MonoBehaviour
 
         if (dashTimer.isRunning)
         {
-            // pausing gravity momentarily when dashing
+            // Pausing gravity momentarily when dashing
             playerRB.linearVelocity = new Vector3(dashDirection * data.dashPower, 0, 0);
         }
         
@@ -278,20 +279,20 @@ public class PlayerController : MonoBehaviour
         if (jumpTimer.isRunning)
         {
             float launchPoint = 0.9f;
-            // using big force on the first 10% of the jump
+            // Using big force on the first 10% of the jump
             if (jumpTimer.Progress > launchPoint)
             {
                 jumpVelocity = data.jumpForce; 
             }
             else 
             { 
-                // progressive lower jump force values based on wich phase of the jump player be  
+                // Progressive lower jump force values based on wich phase of the jump player be  
                 jumpVelocity += (1 - jumpTimer.Progress) * data.gravityStrength * data.smallJumpMultiplier * Time.fixedDeltaTime;
             }
         }
         else
         {
-            // progressive more custom gravity values after the apex of the jump
+            // Progressive more custom gravity values after the apex of the jump
             jumpVelocity += data.gravityStrength * data.fallMultiplier * Time.fixedDeltaTime;
         }
 
@@ -307,7 +308,7 @@ public class PlayerController : MonoBehaviour
             playerRB.linearVelocity = new Vector3(playerRB.linearVelocity.x, playerRB.linearVelocity.y + data.gravityStrength * Time.fixedDeltaTime, 0);
         }        
         else if (!groundChecker.isGrounded && !jumpTimer.isRunning )
-        {   //handles the gravity values when player is just falling without jumping before
+        {   //Handles the gravity values when player is just falling without jumping before
             playerRB.linearVelocity = new Vector3(playerRB.linearVelocity.x, playerRB.linearVelocity.y + data.fallMultiplier * data.gravityStrength * Time.fixedDeltaTime, 0);
         }
     }
