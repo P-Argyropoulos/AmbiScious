@@ -23,6 +23,6 @@ An expandable Finite State Machine is implemented to handle character's animatio
 
     Future implementations: 
 
-Next steps in the course of development are a gameplay story and a purpose that the level design gonna based of, enemy Ai with aggresive behaviour against the character , Boss fight and UI and Audio sound and audio effects.
+Next steps in the course of development are a gameplay story and a purpose that the level design gonna based of, enemy Ai with aggresive behaviour against the character , Boss fight, UI, Audio sound and audio effects.
 
 Also a better connection between animations and movement. 
